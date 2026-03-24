@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ComposedChart
+  Tooltip, ResponsiveContainer
 } from 'recharts';
 
 interface Metric {
@@ -42,7 +42,7 @@ const Dash: React.FC = () => {
     const ws = new WebSocket('ws://localhost:3001');
     
     ws.onopen = () => {
-      setState(prev => ({ ...prev, connected: true }));
+      setState((prev: StreamState) => ({ ...prev, connected: true }));
     };
     
     ws.onmessage = (event) => {
@@ -50,13 +50,13 @@ const Dash: React.FC = () => {
       
       if (message.type === 'metrics') {
         const metric = message.data;
-        setMetrics(prev => {
+        setMetrics((prev: Metric[]) => {
           const updated = [...prev, metric];
           if (updated.length > 60) updated.shift();
           return updated;
         });
         
-        setState(prev => ({
+        setState((prev: StreamState) => ({
           ...prev,
           bitrate: Math.round(metric.bitrate),
           bufferLength: metric.bufferLength.toFixed(1),
@@ -71,14 +71,13 @@ const Dash: React.FC = () => {
     };
     
     ws.onclose = () => {
-      setState(prev => ({ ...prev, connected: false }));
+      setState((prev: StreamState) => ({ ...prev, connected: false }));
     };
     
     return () => ws.close();
   }, []);
 
   const getStatusColor = (ok: boolean) => ok ? '#10b981' : '#ef4444';
-  const getBufferStatus = (buffer: number) => buffer < 2 ? 'critical' : buffer < 5 ? 'warning' : 'ok';
 
   return (
     <div style={{ background: '#0a0a0a', color: '#fff', minHeight: '100vh', padding: '20px' }}>

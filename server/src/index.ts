@@ -1,15 +1,14 @@
-import express from 'express';
-import WebSocket from 'ws';
+import express, { Request, Response, NextFunction } from 'express';
+import { WebSocketServer, WebSocket } from 'ws';
 import http from 'http';
-import { v4 as uuidv4 } from 'uuid';
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocketServer({ server });
 
 // CORS middleware
 app.use(express.json());
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
@@ -113,8 +112,8 @@ function broadcastMetrics() {
     allMetrics: streamState.metrics,
   });
   
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
+  wss.clients.forEach((client: WebSocket) => {
+    if (client.readyState === 1) {  // WebSocket.OPEN = 1
       client.send(data);
     }
   });
@@ -134,18 +133,18 @@ wss.on('connection', (ws: WebSocket) => {
     console.log('Client disconnected');
   });
   
-  ws.on('error', (error) => {
+  ws.on('error', (error: Error) => {
     console.error('WebSocket error:', error);
   });
 });
 
 // Fault injection endpoints
-app.post('/fault/segment-404', (req, res) => {
+app.post('/fault/segment-404', (_req: Request, res: Response) => {
   streamState.faults.add('segment-404');
   res.json({ status: 'injected', fault: 'segment-404' });
 });
 
-app.post('/fault/slow-segment', (req, res) => {
+app.post('/fault/slow-segment', (_req: Request, res: Response) => {
   streamState.faults.add('slow-segment');
   setTimeout(() => {
     streamState.faults.delete('slow-segment');
@@ -153,7 +152,7 @@ app.post('/fault/slow-segment', (req, res) => {
   res.json({ status: 'injected', fault: 'slow-segment' });
 });
 
-app.post('/fault/bitrate-spike', (req, res) => {
+app.post('/fault/bitrate-spike', (_req: Request, res: Response) => {
   streamState.faults.add('bitrate-spike');
   setTimeout(() => {
     streamState.faults.delete('bitrate-spike');
@@ -161,13 +160,13 @@ app.post('/fault/bitrate-spike', (req, res) => {
   res.json({ status: 'injected', fault: 'bitrate-spike' });
 });
 
-app.post('/fault/clear', (req, res) => {
+app.post('/fault/clear', (_req: Request, res: Response) => {
   streamState.faults.clear();
   res.json({ status: 'cleared' });
 });
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', uptime: process.uptime() });
 });
 
